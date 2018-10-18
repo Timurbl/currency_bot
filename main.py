@@ -48,50 +48,60 @@ def rate(message):
     resp = requests.get("http://www.cbr.ru/scripts/XML_daily.asp?date_req=" + date)
     soup = BeautifulSoup(resp.content, "xml")
 
-    command, currency = message.text.split()
-    currency = currency.upper()
+    try:
+        command, currency = message.text.split()
+        currency = currency.upper()
 
-    if len(currency) != 3:
-        bot.send_message(message.chat.id, 'Название валюты должно быть введено в сокращенной записи.')
-    elif currency not in currencies_arr():
-        bot.send_message(message.chat.id, 'Я не умею работать с такой валютой или такой валюты не существует :(')
-    else:
-        nominal = soup.find("CharCode", text=currency).find_next_sibling('Nominal').string
-        rate_of_currency = soup.find("CharCode", text=currency).find_next_sibling('Value').string
+        if len(currency) != 3:
+            bot.send_message(message.chat.id, 'Название валюты должно быть введено в сокращенной записи.')
+        elif currency not in currencies_arr():
+            bot.send_message(message.chat.id, 'Я не умею работать с такой валютой или такой валюты не существует :(')
+        else:
+            nominal = soup.find("CharCode", text=currency).find_next_sibling('Nominal').string
+            rate_of_currency = soup.find("CharCode", text=currency).find_next_sibling('Value').string
 
-        text = nominal + ' ' + currency + ' = ' + rate_of_currency + ' руб'
+            text = nominal + ' ' + currency + ' = ' + rate_of_currency + ' руб'
 
-        bot.send_message(message.chat.id, text)
+            bot.send_message(message.chat.id, text)
+
+    except ValueError:
+        bot.send_message(message.chat.id, 'Вы ввели некорректное число число данных.')
 
 
 @bot.message_handler(commands=['convert'])
 def convert_bot(message):
 
-    command, amount, cur_from, cur_to = message.text.split()
     try:
-        amount = float(amount)
-    except ValueError:
-        bot.send_message(message.chat.id, 'Вы ввели не число на месте количества валюты.')
-    else:
-        amount, cur_to, cur_from = float(amount), cur_to.upper(), cur_from.upper()
-
-        arr = currencies_arr()
-
-        if len(cur_from) != 3 and len(cur_to) != 3:
-            bot.send_message(message.chat.id, 'Названия валют должны быть введены в сокращенной записи.')
-        elif cur_from not in arr and cur_to not in arr:
-            bot.send_message(message.chat.id, 'Я не умею работать с такими валютами или таких валют не существует :(')
-        elif cur_from not in arr:
-            bot.send_message(message.chat.id, 'Я не умею работать с такой валютой или такой валюты не существует :(\n'
-                                              '(Валюта, из которой происходит конвертирование)')
-        elif cur_to not in arr:
-            bot.send_message(message.chat.id, 'Я не умею работать с такой валютой или такой валюты не существует :(\n'
-                                              '(Валюта, в которую происходит конвертирование)')
+        command, amount, cur_from, cur_to = message.text.split()
+        try:
+            amount = float(amount)
+        except ValueError:
+            bot.send_message(message.chat.id, 'Вы ввели не число на месте количества валюты.')
         else:
-            date = get_date()
-            text = convert(amount, cur_to, cur_from, date)
+            amount, cur_to, cur_from = float(amount), cur_to.upper(), cur_from.upper()
 
-            bot.send_message(message.chat.id, text)
+            arr = currencies_arr()
+
+            if len(cur_from) != 3 and len(cur_to) != 3:
+                bot.send_message(message.chat.id, 'Названия валют должны быть введены в сокращенной записи.')
+            elif cur_from not in arr and cur_to not in arr:
+                bot.send_message(message.chat.id, 'Я не умею работать с такими валютами'
+                                                  ' или таких валют не существует :(')
+            elif cur_from not in arr:
+                bot.send_message(message.chat.id, 'Я не умею работать с такой валютой'
+                                                  ' или такой валюты не существует :(\n'
+                                                  '(Валюта, из которой происходит конвертирование)')
+            elif cur_to not in arr:
+                bot.send_message(message.chat.id, 'Я не умею работать с такой валютой'
+                                                  ' или такой валюты не существует :(\n'
+                                                  '(Валюта, в которую происходит конвертирование)')
+            else:
+                date = get_date()
+                text = convert(amount, cur_to, cur_from, date)
+
+                bot.send_message(message.chat.id, text)
+    except ValueError:
+        bot.send_message(message.chat.id, 'Вы ввели некорректное число число данных.')
 
 
 def currencies_arr():
